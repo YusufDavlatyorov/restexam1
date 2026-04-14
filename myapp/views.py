@@ -27,8 +27,58 @@ from .serializers import (
     VideoSerializers,
 )
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_200_OK
+)
+
+from django.contrib.auth import authenticate
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.models import Token
+
+from .serializers import RegisterSerializer
+
+
+class RegisterAPIView(APIView):
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({"token": token.key}, status=HTTP_201_CREATED)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+
+class LoginAPIView(APIView):
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
+
+        user = authenticate(username=username, password=password)
+        if user:
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({"token": token.key}, status=HTTP_200_OK)
+
+        return Response(
+            {"error": "Invalid credentials"},
+            status=HTTP_400_BAD_REQUEST
+        )
+
+
+class ProfileAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({"user": request.user.username})
 
 class UsersListCreateAPIView(ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = UsersSerializers
     pagination_class = CustomPagination
 
@@ -37,11 +87,15 @@ class UsersListCreateAPIView(ListCreateAPIView):
 
 
 class UserDetailAPIView(RetrieveUpdateDestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = UserDetailSerializers
     queryset = Users.objects.all()
 
 
 class UserChannelsListAPIView(ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = ChanelSerializers
     pagination_class = CustomPagination
 
@@ -53,6 +107,8 @@ class UserChannelsListAPIView(ListAPIView):
 
 
 class ChanelListCreateAPIView(ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = ChanelSerializers
     pagination_class = CustomPagination
 
@@ -69,6 +125,8 @@ class ChanelListCreateAPIView(ListCreateAPIView):
 
 
 class ChanelDetailAPIView(RetrieveUpdateDestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = Chanels.objects.all()
     serializer_class = ChanelDetailSerializer
 
@@ -85,6 +143,8 @@ class ChanelDetailAPIView(RetrieveUpdateDestroyAPIView):
 
 
 class ChanelVideosListView(ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = VideoSerializers
     pagination_class = CustomPagination
 
@@ -100,6 +160,8 @@ class ChanelVideosListView(ListAPIView):
 
 
 class ChanelStatsView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, pk):
         videos = Videos.objects.filter(chanel_id=pk)
         stats = videos.aggregate(total_videos=Count('id'), total_views=Sum('views'), avg_views=Avg('views'))
@@ -113,6 +175,8 @@ class ChanelStatsView(APIView):
 
 
 class VideoListCreateAPIView(ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = VideoSerializers
     pagination_class = CustomPagination
 
@@ -121,6 +185,8 @@ class VideoListCreateAPIView(ListCreateAPIView):
 
 
 class VideoDetailAPIView(RetrieveUpdateDestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = VideoSerializers
 
     def get_queryset(self):
@@ -163,6 +229,8 @@ class VideoDetailAPIView(RetrieveUpdateDestroyAPIView):
 
 
 class VideoCommentsListAPIView(ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = CommentSerializers
     pagination_class = CustomPagination
 
@@ -173,6 +241,8 @@ class VideoCommentsListAPIView(ListAPIView):
 
 
 class VideoCommentCreateAPIView(CreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = CommentSerializers
 
     def perform_create(self, serializer):
@@ -180,6 +250,8 @@ class VideoCommentCreateAPIView(CreateAPIView):
 
 
 class CommentDetailAPIView(RetrieveDestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = Comments.objects.all().select_related('user', 'video')
     serializer_class = CommentDetailSerializers
 
@@ -191,6 +263,8 @@ class CommentDetailAPIView(RetrieveDestroyAPIView):
 
 
 class VideoLikeAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request, pk):
         data = request.data.copy()
         data['video_id'] = pk
@@ -205,6 +279,8 @@ class VideoLikeAPIView(APIView):
 
 
 class VideoLikesListAPIView(ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = VideoLikesListSerializer
 
     def get_queryset(self):
@@ -220,6 +296,8 @@ class VideoLikesListAPIView(ListAPIView):
 
 
 class VideoSearchAPIView(ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = VideoSerializers
 
     def get_queryset(self):
@@ -240,6 +318,8 @@ class VideoSearchAPIView(ListAPIView):
 
 
 class VideoTopAPIView(ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = VideoSerializers
 
     def get_queryset(self):
@@ -255,6 +335,8 @@ class VideoTopAPIView(ListAPIView):
 
 
 class VideoRelatedAPIView(ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = VideoSerializers
 
     def get_queryset(self):
@@ -263,6 +345,8 @@ class VideoRelatedAPIView(ListAPIView):
 
 
 class StatsVideosAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         stats = Videos.objects.aggregate(total_videos=Count('id'), total_views=Sum('views'), avg_views=Avg('views'))
         return Response({
@@ -273,6 +357,8 @@ class StatsVideosAPIView(APIView):
 
 
 class StatsUsersAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         total_users = Users.objects.count()
         users_with_channels = Users.objects.annotate(c_count=Count('chanels')).filter(c_count__gt=0).count()
@@ -284,6 +370,8 @@ class StatsUsersAPIView(APIView):
 
 
 class StatsChannelsAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         top_channel = Chanels.objects.annotate(all_views=Sum('videos__views')).order_by('-all_views').first()
         avg_videos = Chanels.objects.annotate(v_count=Count('videos')).aggregate(Avg('v_count'))

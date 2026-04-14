@@ -3,13 +3,26 @@ from rest_framework import serializers
 from .models import Users, Chanels, Comments, Likes, Videos
 
 
+class RegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Users
+        fields = ['username', 'password']
+
+    def create(self, validated_data):
+        user = Users.objects.create_user(
+            username=validated_data['username'],
+            password=validated_data['password']
+        )
+        return user
+
+
 class UsersSerializers(serializers.ModelSerializer):
-    created_at = serializers.DateTimeField(read_only=True)
+    date_joined = serializers.DateTimeField(read_only=True)
     channels_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Users
-        fields = ['id', 'username', 'email', 'created_at', 'channels_count']
+        fields = ['id', 'username', 'email', 'date_joined', 'channels_count']
 
 
 class ChanelSerializers(serializers.ModelSerializer):
@@ -141,13 +154,13 @@ class LikeToggleSerializer(serializers.ModelSerializer):
 
 
 class UserDetailSerializers(serializers.ModelSerializer):
-    created_at = serializers.DateTimeField(read_only=True)
+    date_joined = serializers.DateTimeField(read_only=True)
     chanels = ChanelSerializers(many=True, read_only=True)
     total_video = serializers.SerializerMethodField()
 
     class Meta:
         model = Users
-        fields = ['id', 'username', 'email', 'created_at', 'chanels', 'total_video']
+        fields = ['id', 'username', 'email', 'date_joined', 'chanels', 'total_video']
 
     def get_total_video(self, obj):
         return Videos.objects.filter(chanel__user=obj).count()
